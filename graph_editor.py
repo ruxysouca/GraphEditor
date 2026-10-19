@@ -16,4 +16,11 @@ class GraphEditor:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
 
     def on_canvas_click(self, event):
-        pass
+        x, y = event.x, event.y
+
+        new_id = len(self.nodes) + 1
+        new_node = Node(new_id, x, y)
+
+        new_node.draw(self.canvas)
+        self.nodes.append(new_node)
+    
