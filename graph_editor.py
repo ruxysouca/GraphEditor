@@ -27,8 +27,21 @@ class GraphEditor:
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
 
-    def redraw_canvas(self):
+    def redraw_canvas(self, temp_line_coords = None):
         self.canvas.delete("all")
+
+        for edge in self.edges:
+            edge.draw(self.canvas)
+
+        if temp_line_coords:
+            x1, y1, x2, y2 = temp_line_coords
+            arrow_style = tk.LAST if self.is_directed else tk.NONE
+            self.canvas.create_line(
+                x1, y1, x2, y2,
+                fill = "gray", width = 2,
+                dash = (4,4), arrow = arrow_style
+            )
+
         for node in self.nodes:
             node.draw(self.canvas)
 
@@ -47,22 +60,38 @@ class GraphEditor:
 
             self.original_x = clicked_node.x
             self.original_y = clicked_node.y
+            return
 
-        else:
-            self.selected_node = None
-            self.drag_mode = None
+        near_node = None
+        tolerance = 20
+        for node in self.nodes:
+            dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+            if node.radius < dist <= (node.radius + tolerance):
+                near_node = node
+                break
 
-            new_id = len(self.nodes) + 1
-            new_node = Node(new_id, x, y)
+        if near_node is not None:
+            self.selected_node = near_node
+            self.drag_mode = "create_edge"
+            return
 
-            new_node.draw(self.canvas)
-            self.nodes.append(new_node)
+        self.selected_node = None
+        self.drag_mode = None
+
+        new_id = len(self.nodes) + 1
+        new_node = Node(new_id, x, y)
+
+        new_node.draw(self.canvas)
+        self.nodes.append(new_node)
 
     def on_mouse_drag(self, event):
         if self.drag_mode == "move_node" and self.selected_node is not None:
             self.selected_node.x = event.x
             self.selected_node.y = event.y
             self.redraw_canvas()
+
+        elif self.drag_mode == "create_edge" and self.selected_node is not None:
+            self.redraw_canvas(temp_line_coords = (self.selected_node.x, self.selected_node.y, event.x, event.y))
 
     def on_mouse_up(self, event):
         if self.drag_mode == "move_node" and self.selected_node is not None:
@@ -80,6 +109,36 @@ class GraphEditor:
                 messagebox.showwarning(title="Collision warning",
                                        message="Cannot place a node too close or on top of another node!")
                 self.redraw_canvas()
+
+        elif self.drag_mode == "create_edge" and self.selected_node is not None:
+            target_node = None
+            tolerance = 20
+            x, y = event.x, event.y
+
+            for node in self.nodes:
+                if node != self.selected_node:
+                    dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+                    if dist <= (node.radius + tolerance):
+                        target_node = node
+                        break
+
+            if target_node is not None:
+                edge_exists = False
+                for edge in self.edges:
+                    if edge.connects(self.selected_node, target_node):
+                        edge_exists = True
+                        break
+
+                if not edge_exists:
+                    new_edge = Edge(self.selected_node, target_node, self.is_directed)
+                    self.edges.append(new_edge)
+                else:
+                    messagebox.showwarning(title="Edge warning", message = "Edge already exists between these nodes!")
+
+            else:
+                messagebox.showwarning(title="Edge warning", message = "Edge must end near another node!")
+
+            self.redraw_canvas()
 
         self.selected_node = None
         self.drag_mode = None
