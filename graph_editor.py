@@ -8,7 +8,7 @@ class GraphEditor:
     def __init__(self, window):
         self.window = window
         self.window.title("Graph Editor")
-        self.window.geometry("900x600")
+        self.window.geometry("900x630")
 
         self.nodes = []
         self.edges = []
@@ -23,9 +23,22 @@ class GraphEditor:
         self.canvas = tk.Canvas(self.window, bg="white", width = 850, height = 550)
         self.canvas.grid(row =0, column=0, padx = 20, pady = 20)
 
+        self.directed_var = tk.BooleanVar(value = self.is_directed)
+        self.directed_checkbox = tk.Checkbutton(
+            self.window,
+            text = "Directed graph",
+            variable = self.directed_var,
+            command = self.toggle_directed_mode,
+            font = ("Arial", 10, "bold")
+        )
+        self.directed_checkbox.grid(row =1, column = 0, sticky = "w", padx = 20, pady = (0,10))
+
         self.canvas.bind("<Button-1>", self.on_mouse_down)
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
+
+    def toggle_directed_mode(self):
+        self.is_directed = self.directed_var.get()
 
     def redraw_canvas(self, temp_line_coords = None):
         self.canvas.delete("all")
