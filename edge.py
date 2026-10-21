@@ -8,7 +8,10 @@ class Edge:
         self.is_directed = is_directed
 
     def connects(self, node1, node2):
-        return (self.node1 == node1 and self.node2 == node2) or (self.node1 == node2 and self.node2 == node1)
+        if self.is_directed:
+            return self.node1 == node1 and self.node2 == node2
+        else:
+             return (self.node1 == node1 and self.node2 == node2) or (self.node2 == node1 and self.node1 == node2)
 
     def draw(self, canvas, color = "black"):
         x1, y1 = self.node1.x, self.node1.y
