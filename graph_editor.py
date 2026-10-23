@@ -36,9 +36,16 @@ class GraphEditor:
         self.canvas.bind("<Button-1>", self.on_mouse_down)
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
+        self.canvas.bind("<Button-3>", self.on_right_click)
 
     def toggle_directed_mode(self):
         self.is_directed = self.directed_var.get()
+
+        for edge in self.edges:
+            edge.is_directed = self.is_directed
+
+        self.redraw_canvas()
+        self.save_adjacency_matrix()
 
     def redraw_canvas(self, temp_line_coords = None):
         self.canvas.delete("all")
@@ -88,6 +95,18 @@ class GraphEditor:
             self.drag_mode = "create_edge"
             return
 
+        too_close = False
+        min_distance = 40
+        for node in self.nodes:
+            dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+            if dist < (node.radius * 2 + min_distance):
+                too_close = True
+                break
+
+        if too_close:
+            messagebox.showwarning(title="Collision warning", message = "Cannot place a node too close or on top of another node!")
+            return
+
         self.selected_node = None
         self.drag_mode = None
 
@@ -96,6 +115,7 @@ class GraphEditor:
 
         new_node.draw(self.canvas)
         self.nodes.append(new_node)
+        self.save_adjacency_matrix()
 
     def on_mouse_drag(self, event):
         if self.drag_mode == "move_node" and self.selected_node is not None:
@@ -109,10 +129,11 @@ class GraphEditor:
     def on_mouse_up(self, event):
         if self.drag_mode == "move_node" and self.selected_node is not None:
             collision = False
+            min_distance = 40
             for node in self.nodes:
                 if node != self.selected_node:
                     dist = ((node.x - self.selected_node.x) ** 2 + (node.y - self.selected_node.y) ** 2) ** 0.5
-                    if dist < (self.selected_node.radius * 2 + 20):
+                    if dist < (self.selected_node.radius * 2 + min_distance):
                         collision = True
                         break
 
@@ -121,7 +142,8 @@ class GraphEditor:
                 self.selected_node.y = self.original_y
                 messagebox.showwarning(title="Collision warning",
                                        message="Cannot place a node too close or on top of another node!")
-                self.redraw_canvas()
+            self.redraw_canvas()
+            self.save_adjacency_matrix()
 
         elif self.drag_mode == "create_edge" and self.selected_node is not None:
             target_node = None
@@ -145,6 +167,7 @@ class GraphEditor:
                 if not edge_exists:
                     new_edge = Edge(self.selected_node, target_node, self.is_directed)
                     self.edges.append(new_edge)
+                    self.save_adjacency_matrix()
                 else:
                     messagebox.showwarning(title="Edge warning", message = "Edge already exists between these nodes!")
 
@@ -155,3 +178,54 @@ class GraphEditor:
 
         self.selected_node = None
         self.drag_mode = None
+
+    def on_right_click(self, event):
+        x, y = event.x, event.y
+        node_to_delete = None
+
+        for node in self.nodes:
+            if node.contains_point(x, y):
+                node_to_delete = node
+                break
+
+        if node_to_delete is not None:
+            self.edges = [edge for edge in self.edges if edge.node1 != node_to_delete and edge.node2 != node_to_delete]
+            self.nodes.remove(node_to_delete)
+            self.redraw_canvas()
+            self.save_adjacency_matrix()
+
+    def save_adjacency_matrix(self, filename = "adjacency_matrix.txt"):
+        n = len(self.nodes)
+
+        sorted_nodes = sorted(self.nodes, key = lambda node: node.id)
+
+        id_to_index = {}
+        for index, node in enumerate(sorted_nodes):
+            id_to_index[node.id] = index
+
+        matrix = []
+        for i in range(n):
+            row = [0] * n
+            matrix.append(row)
+
+        for edge in self.edges:
+            id1 = edge.node1.id
+            id2 = edge.node2.id
+
+            u = id_to_index[id1]
+            v = id_to_index[id2]
+
+            if self.is_directed:
+                matrix[u][v] = 1
+            else:
+                matrix[u][v] = 1
+                matrix[v][u] = 1
+
+        try:
+            with open(filename, "w") as f:
+                f.write(f"{n}\n")
+                for row in matrix:
+                    row_string = " ".join(map(str,row))
+                    f.write(row_string + "\n")
+        except Exception as e:
+            print(e)
