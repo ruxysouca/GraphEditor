@@ -38,6 +38,8 @@ class GraphEditor:
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
         self.canvas.bind("<Button-3>", self.on_right_click)
 
+        self.save_adjacency_matrix()
+        
     def toggle_directed_mode(self):
         self.is_directed = self.directed_var.get()
 
@@ -110,7 +112,11 @@ class GraphEditor:
         self.selected_node = None
         self.drag_mode = None
 
-        new_id = len(self.nodes) + 1
+        if self.nodes:
+            new_id = max(node.id for node in self.nodes) + 1
+        else:
+            new_id = 1
+
         new_node = Node(new_id, x, y)
 
         new_node.draw(self.canvas)
