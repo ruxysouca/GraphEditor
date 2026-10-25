@@ -39,7 +39,7 @@ class GraphEditor:
         self.canvas.bind("<Button-3>", self.on_right_click)
 
         self.save_adjacency_matrix()
-        
+
     def toggle_directed_mode(self):
         self.is_directed = self.directed_var.get()
 
