@@ -40,6 +40,16 @@ class GraphEditor:
 
         self.save_adjacency_matrix()
 
+    def calculate_distance(self, x1, y1, x2, y2):
+        return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
+
+    def clamp_coordinates(self, x, y, radius = 20, padding = 10):
+        margin = radius + padding
+
+        clamped_x = max(margin, min(x, 850 - margin))
+        clamped_y = max(margin, min(y, 550 - margin))
+        return clamped_x, clamped_y
+
     def toggle_directed_mode(self):
         self.is_directed = self.directed_var.get()
 
@@ -68,7 +78,7 @@ class GraphEditor:
             node.draw(self.canvas)
 
     def on_mouse_down(self, event):
-        x, y = event.x, event.y
+        x, y = self.clamp_coordinates(event.x, event.y)
 
         clicked_node = None
         for node in self.nodes:
@@ -87,7 +97,7 @@ class GraphEditor:
         near_node = None
         tolerance = 20
         for node in self.nodes:
-            dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+            dist = self.calculate_distance(node.x, node.y, x, y)
             if node.radius < dist <= (node.radius + tolerance):
                 near_node = node
                 break
@@ -100,7 +110,7 @@ class GraphEditor:
         too_close = False
         min_distance = 40
         for node in self.nodes:
-            dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+            dist = self.calculate_distance(node.x, node.y, x, y)
             if dist < (node.radius * 2 + min_distance):
                 too_close = True
                 break
@@ -125,8 +135,9 @@ class GraphEditor:
 
     def on_mouse_drag(self, event):
         if self.drag_mode == "move_node" and self.selected_node is not None:
-            self.selected_node.x = event.x
-            self.selected_node.y = event.y
+            x, y = self.clamp_coordinates(event.x, event.y)
+            self.selected_node.x = x
+            self.selected_node.y = y
             self.redraw_canvas()
 
         elif self.drag_mode == "create_edge" and self.selected_node is not None:
@@ -138,7 +149,7 @@ class GraphEditor:
             min_distance = 40
             for node in self.nodes:
                 if node != self.selected_node:
-                    dist = ((node.x - self.selected_node.x) ** 2 + (node.y - self.selected_node.y) ** 2) ** 0.5
+                    dist = self.calculate_distance(node.x, node.y, self.selected_node.x, self.selected_node.y)
                     if dist < (self.selected_node.radius * 2 + min_distance):
                         collision = True
                         break
@@ -158,7 +169,7 @@ class GraphEditor:
 
             for node in self.nodes:
                 if node != self.selected_node:
-                    dist = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+                    dist = self.calculate_distance(node.x, node.y, x, y)
                     if dist <= (node.radius + tolerance):
                         target_node = node
                         break
