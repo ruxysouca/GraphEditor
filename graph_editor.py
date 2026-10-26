@@ -33,12 +33,30 @@ class GraphEditor:
         )
         self.directed_checkbox.grid(row =1, column = 0, sticky = "w", padx = 20, pady = (0,10))
 
+        self.clear_button = tk.Button(
+            self.window,
+            text = "Clear all",
+            command = self.clear_all,
+            font = ("Courier", 10, "bold"),
+            bg = "#ffcccc"
+        )
+        self.clear_button.grid(row = 1, column = 0, sticky = "e", padx = 20, pady = (0, 10))
+
         self.canvas.bind("<Button-1>", self.on_mouse_down)
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
         self.canvas.bind("<Button-3>", self.on_right_click)
 
         self.save_adjacency_matrix()
+
+    def clear_all(self):
+        if messagebox.askyesno(title = "Clear All", message = "Are you sure you want to delete the entire graph?"):
+            self.nodes.clear()
+            self.edges.clear()
+            self.selected_node = None
+            self.drag_mode = None
+            self.redraw_canvas()
+            self.save_adjacency_matrix()
 
     def calculate_distance(self, x1, y1, x2, y2):
         return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
